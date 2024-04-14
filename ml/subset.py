@@ -1,6 +1,6 @@
 import pandas as pd
 
-def load_and_subset_data(file_path, output_file_path, subset_size=100000, random_state=69):
+def load_and_subset_data(file_path, output_file_path, subset_size=10000, random_state=69):
     data = pd.read_csv(file_path)
     
     # Display basic information about the dataset
