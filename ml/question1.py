@@ -1,27 +1,34 @@
 import pandas as pd
-from sklearn.model_selection import KFold
+import numpy as np
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-from tqdm import tqdm
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Load the CSV data file
-data_path = '../realtor-data_small.csv'  # Adjust path as needed
+# Load the data
+data_path = '../realtor-data_small.csv'
 house_data = pd.read_csv(data_path)
 
-# Imputing missing values for numerical columns
+# Define features and target
 numerical_features = ['bed', 'bath', 'acre_lot', 'house_size']
-numerical_transformer = SimpleImputer(strategy='median')
-
-# One-hot encoding for categorical data
 categorical_features = ['city']
-categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+features = numerical_features + categorical_features
+target = 'price'
 
-# Preprocessor for pipelines
+# Clean the data: Remove rows with missing target
+house_data = house_data[house_data[target].notna()]
+
+# Split data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    house_data[features], house_data[target], test_size=0.2, random_state=0)
+
+# Define preprocessing for numerical and categorical data
+numerical_transformer = SimpleImputer(strategy='median')
+categorical_transformer = OneHotEncoder(handle_unknown='ignore')
 preprocessor = ColumnTransformer(
     transformers=[
         ('num', numerical_transformer, numerical_features),
@@ -29,46 +36,28 @@ preprocessor = ColumnTransformer(
     ])
 
 # Define the models
-model_rf = RandomForestRegressor(n_estimators=100, random_state=0)
-model_lr = LinearRegression()
+models = {
+    'Random Forest': RandomForestRegressor(n_estimators=100, random_state=0),
+    'Linear Regression': LinearRegression(),
+    'Gradient Boosting': GradientBoostingRegressor(random_state=0)
+}
 
-# Create the pipelines
-pipeline_rf = Pipeline(steps=[('preprocessor', preprocessor), ('model', model_rf)])
-pipeline_lr = Pipeline(steps=[('preprocessor', preprocessor), ('model', model_lr)])
+# Evaluate models using cross-validation
+cv_results = {}
+for name, model in models.items():
+    pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', model)])
+    scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring='neg_mean_squared_error')
+    cv_results[name] = -scores.mean()  # Convert to positive MSE
 
-# Extracting the feature columns and target column
-X = house_data[numerical_features + categorical_features]
-y = house_data['price']
+# Select the best model based on cross-validation MSE
+best_model_name = min(cv_results, key=cv_results.get)
+best_pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', models[best_model_name])])
 
-# Remove rows with missing target (price)
-X = X[y.notna()]
-y = y[y.notna()]
+# Train the best model on the full training set and evaluate it on the test set
+best_pipeline.fit(X_train, y_train)
+y_pred = best_pipeline.predict(X_test)
+mse_test = mean_squared_error(y_test, y_pred)
+r2_test = r2_score(y_test, y_pred)
 
-# Setup KFold cross-validation
-kf = KFold(n_splits=5, shuffle=True, random_state=0)
-
-# Perform cross-validation
-metrics_rf = {'MSE': [], 'MAE': [], 'R2': []}
-metrics_lr = {'MSE': [], 'MAE': [], 'R2': []}
-
-for fold, (train_index, test_index) in enumerate(tqdm(kf.split(X), total=kf.n_splits, desc="CV Folds")):
-    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-
-    # Fit and evaluate Random Forest
-    pipeline_rf.fit(X_train, y_train)
-    predictions_rf = pipeline_rf.predict(X_test)
-    metrics_rf['MSE'].append(mean_squared_error(y_test, predictions_rf))
-    metrics_rf['MAE'].append(mean_absolute_error(y_test, predictions_rf))
-    metrics_rf['R2'].append(r2_score(y_test, predictions_rf))
-
-    # Fit and evaluate Linear Regression
-    pipeline_lr.fit(X_train, y_train)
-    predictions_lr = pipeline_lr.predict(X_test)
-    metrics_lr['MSE'].append(mean_squared_error(y_test, predictions_lr))
-    metrics_lr['MAE'].append(mean_absolute_error(y_test, predictions_lr))
-    metrics_lr['R2'].append(r2_score(y_test, predictions_lr))
-
-# Print average metrics
-print("Random Forest Average Metrics:", {k: sum(v) / len(v) for k, v in metrics_rf.items()})
-print("Linear Regression Average Metrics:", {k: sum(v) / len(v) for k, v in metrics_lr.items()})
+# Print results
+print(f"Best model: {best_model_name} with test MSE: {mse_test} and R^2: {r2_test}")
