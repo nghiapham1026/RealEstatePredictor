@@ -10,7 +10,7 @@
    - **Output:** Price of the house.
    - **Usefulness:** This model correlates directly with your second question and can be used to understand and quantify the strength of the relationship between house size and price, which can help in setting pricing guidelines or assessing market value.
 
-3. **Model to Classify House Characteristics by State**
+3. **Model to Classify House Characteristics by State (Optional)**
    - **Objective:** Develop a classification or clustering model to predict or group houses based on common characteristics within a state.
    - **Features:** Number of bedrooms, number of bathrooms, house size, and other relevant features that might distinguish houses in different states.
    - **Output:** Classification or clustering of houses by state, based on average characteristics.

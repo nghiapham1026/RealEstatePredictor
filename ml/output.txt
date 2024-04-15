@@ -1,0 +1,69 @@
+#1:
+Data loaded successfully.
+Data cleaned. Remaining samples: 9994
+Data split into training and test sets.
+Models defined.
+Random Forest cross-validation completed with MSE: 800171639207.8932
+Linear Regression cross-validation completed with MSE: 1722559288172.3032
+Gradient Boosting cross-validation completed with MSE: 774794854995.3828
+Best model based on cross-validation MSE: Gradient Boosting
+Best model trained on the full training set.
+Final evaluation on test set - Gradient Boosting with test MSE: 1842620605668.8977 and R^2: 0.1325107198055917
+
+#2:
+Data loaded successfully.
+   brokered_by    status     price  bed  bath  acre_lot     street           city           state  zip_code  house_size prev_sold_date
+0      40618.0  for_sale  239800.0  3.0   2.0      0.28  1693508.0         Graham  North Carolina   27253.0      1105.0     2021-10-22
+1       8448.0  for_sale   32000.0  NaN   NaN      0.82    99962.0  Coal Township    Pennsylvania   17866.0         NaN            NaN
+2      42349.0  for_sale   60000.0  2.0   2.0      0.08  1432411.0        Memphis       Tennessee   38141.0         NaN     2018-11-16
+3      10838.0      sold  230000.0  2.0   2.0      0.30  1678519.0     Pittsburgh    Pennsylvania   15237.0       884.0     2022-02-09
+4      78258.0  for_sale  580790.0  3.0   3.0      0.16  1583072.0        Greeley        Colorado   80634.0      3519.0     2022-02-08
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 10000 entries, 0 to 9999
+Data columns (total 12 columns):
+ #   Column          Non-Null Count  Dtype
+---  ------          --------------  -----
+ 0   brokered_by     9976 non-null   float64
+ 1   status          10000 non-null  object
+ 2   price           9994 non-null   float64
+ 3   bed             7851 non-null   float64
+ 4   bath            7717 non-null   float64
+ 5   acre_lot        8574 non-null   float64
+ 6   street          9955 non-null   float64
+ 7   city            9993 non-null   object
+ 8   state           10000 non-null  object
+ 9   zip_code        9999 non-null   float64
+ 10  house_size      7468 non-null   float64
+ 11  prev_sold_date  6711 non-null   object
+dtypes: float64(8), object(4)
+memory usage: 937.6+ KB
+None
+         brokered_by         price          bed         bath      acre_lot        street      zip_code     house_size
+count    9976.000000  9.994000e+03  7851.000000  7717.000000   8574.000000  9.955000e+03   9999.000000    7468.000000
+mean    52761.051323  5.205328e+05     3.277799     2.513153      7.168354  1.017113e+06  51889.680368    2080.809588
+std     30902.556770  1.137806e+06     1.365877     1.493198    147.108826  5.837961e+05  28808.725491    3633.290310
+min         8.000000  1.000000e+00     1.000000     1.000000      0.000000  2.620000e+02    646.000000     200.000000
+25%     23592.000000  1.688498e+05     3.000000     2.000000      0.160000  5.121135e+05  29582.000000    1311.750000
+50%     52871.000000  3.279900e+05     3.000000     2.000000      0.260000  1.017404e+06  48224.000000    1763.000000
+75%     79174.000000  5.484980e+05     4.000000     3.000000      0.970000  1.525682e+06  77590.000000    2404.000000
+max    110110.000000  4.650000e+07    48.000000    48.000000  11670.000000  2.001324e+06  99903.000000  290545.000000
+Percentage of missing data: price          0.06
+house_size    25.32
+dtype: float64
+Correlation between house size and price:             house_size     price
+house_size    1.000000  0.158797
+price         0.158797  1.000000
+Missing 'price' rows dropped.
+C:\Users\nghia\OneDrive\Documents\GitHub\RealEstatePredictor\ml\question2.py:32: SettingWithCopyWarning:
+A value is trying to be set on a copy of a slice from a DataFrame
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data_cleaned['house_size'].fillna(median_house_size, inplace=True)
+Missing 'house_size' imputed with median value: 1763.0
+Post-imputation missing values: price         0
+house_size    0
+dtype: int64
+Training set and test set sizes: (7995, 1) (1999, 1)
+Model RMSEs: Linear Regression: 1124927.314962758 Ridge Regression: 1124927.314960231 Random Forest Regression: 1329706.2816623051
+Best model trained on the full training set.
+Test set RMSE: 2258676.789351248
