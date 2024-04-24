@@ -6,6 +6,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.svm import SVR
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Load the data
@@ -15,7 +16,7 @@ print("Data loaded successfully.")
 
 # Define features and target
 numerical_features = ['house_size']  # Focusing on house size primarily
-categorical_features = ['city']  # Correlating categorical feature
+categorical_features = ['state', 'acre_lot', 'prev_sold_date']
 features = numerical_features + categorical_features
 target = 'price'
 
@@ -40,7 +41,8 @@ preprocessor = ColumnTransformer(
 # Define the models
 models = {
     'Random Forest': RandomForestRegressor(n_estimators=100, random_state=0),
-    'Linear Regression': LinearRegression()
+    'Linear Regression': LinearRegression(),
+    'SVR': SVR(kernel='linear')
 }
 
 # Evaluate models using cross-validation
