@@ -1,73 +1,67 @@
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Load the dataset
-file_path = '../realtor-data_small.csv'
-data = pd.read_csv(file_path)
+# Load the data
+data_path = '../realtor-data_small.csv'
+house_data = pd.read_csv(data_path)
 print("Data loaded successfully.")
 
-# Display the first few rows of the dataset and the summary of the data
-print(data.head())
-print(data.info())
-print(data.describe())
+# Define features and target
+numerical_features = ['house_size']  # Focusing on house size primarily
+categorical_features = ['city']  # Correlating categorical feature
+features = numerical_features + categorical_features
+target = 'price'
 
-# Check the percentage of missing values in key columns
-missing_data = data[['price', 'house_size']].isnull().mean() * 100
-print("Percentage of missing data:", missing_data)
+# Clean the data: Remove rows with missing values
+house_data = house_data.dropna(subset=features + [target])
+print(f"Data cleaned. Remaining samples: {len(house_data)}")
 
-# We'll also check the correlation between house size and price to confirm our hypothesis
-correlation = data[['house_size', 'price']].corr()
-print("Correlation between house size and price:", correlation)
+# Split data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    house_data[features], house_data[target], test_size=0.2, random_state=0)
+print("Data split into training and test sets.")
 
-# Dropping rows where 'price' is missing
-data_cleaned = data.dropna(subset=['price'])
-print("Missing 'price' rows dropped.")
+# Define preprocessing for numerical and categorical data
+numerical_transformer = SimpleImputer(strategy='median')
+categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numerical_transformer, numerical_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
 
-# Imputing missing values in 'house_size' with the median
-median_house_size = data_cleaned['house_size'].median()
-data_cleaned['house_size'].fillna(median_house_size, inplace=True)
-print("Missing 'house_size' imputed with median value:", median_house_size)
+# Define the models
+models = {
+    'Random Forest': RandomForestRegressor(n_estimators=100, random_state=0),
+    'Linear Regression': LinearRegression()
+}
 
-# Verify the imputation
-print("Post-imputation missing values:", data_cleaned[['price', 'house_size']].isnull().sum())
+# Evaluate models using cross-validation
+cv_results = {}
+for name, model in models.items():
+    pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', model)])
+    scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring='neg_mean_squared_error')
+    cv_results[name] = -scores.mean()  # Convert to positive MSE
+    print(f"{name} cross-validation completed with MSE: {cv_results[name]}")
 
-# Define features and target variable
-X = data_cleaned[['house_size']]
-y = data_cleaned['price']
+# Select the best model based on cross-validation MSE
+best_model_name = min(cv_results, key=cv_results.get)
+best_pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', models[best_model_name])])
+print(f"Best model based on cross-validation MSE: {best_model_name}")
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-print("Training set and test set sizes:", X_train.shape, X_test.shape)
-
-# Initialize the models
-linear_model = LinearRegression()
-ridge_model = Ridge(random_state=42)
-random_forest_model = RandomForestRegressor(n_estimators=100, random_state=42)
-
-# Function to perform cross-validation and compute RMSE
-def evaluate_model(model, X, y, cv=5):
-    neg_rmse_scores = cross_val_score(model, X, y, scoring='neg_root_mean_squared_error', cv=cv)
-    rmse_scores = -neg_rmse_scores
-    return rmse_scores.mean()
-
-# Evaluate models
-linear_rmse = evaluate_model(linear_model, X_train, y_train)
-ridge_rmse = evaluate_model(ridge_model, X_train, y_train)
-random_forest_rmse = evaluate_model(random_forest_model, X_train, y_train)
-print("Model RMSEs:", "Linear Regression:", linear_rmse, "Ridge Regression:", ridge_rmse, "Random Forest Regression:", random_forest_rmse)
-
-# Fit the best model on the entire training data
-best_model = linear_model  # Assuming linear model performed best
-best_model.fit(X_train, y_train)
+# Train the best model on the full training set and evaluate it on the test set
+best_pipeline.fit(X_train, y_train)
 print("Best model trained on the full training set.")
+y_pred = best_pipeline.predict(X_test)
+mse_test = mean_squared_error(y_test, y_pred)
+r2_test = r2_score(y_test, y_pred)
 
-# Predict on the test set
-y_pred = best_model.predict(X_test)
-
-# Calculate RMSE on the test set
-test_rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-print("Test set RMSE:", test_rmse)
+# Print results
+print(f"Final evaluation on test set - {best_model_name} with test MSE: {mse_test} and R^2: {r2_test}")
